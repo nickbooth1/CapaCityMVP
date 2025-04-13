@@ -16,7 +16,7 @@ The interface should be based around airport signage, which is primarily black, 
 The layout should clean and modern, with a menu always visable to allow easy navigation.
 
 - Frontend - DONE
-- Supabase (Authentication & PostgreSQL DB) - Initiated
+- Supabase (Authentication & PostgreSQL DB) - DONE
 - Backend - Initiated - DONE
 - Initial Pages - Initiated
 - git repo
