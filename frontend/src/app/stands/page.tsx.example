@@ -1,0 +1,148 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { api } from '@/utils/api';
+import { Database } from '@/lib/supabase';
+
+type Stand = Database['public']['Tables']['stands']['Row'];
+type Airport = Database['public']['Tables']['airports']['Row'];
+
+export default function StandsPage() {
+  const [stands, setStands] = useState<Stand[]>([]);
+  const [airports, setAirports] = useState<Airport[]>([]);
+  const [selectedAirport, setSelectedAirport] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState({ text: '', type: '' });
+  const [isAddingStand, setIsAddingStand] = useState(false);
+  const [isEditingStand, setIsEditingStand] = useState<Stand | null>(null);
+  const [newStand, setNewStand] = useState({
+    name: '',
+    airport_id: '',
+    status: 'active' as 'active' | 'maintenance' | 'inactive',
+  });
+
+  useEffect(() => {
+    fetchAirports();
+  }, []);
+
+  useEffect(() => {
+    if (selectedAirport) {
+      fetchStands(selectedAirport);
+    }
+  }, [selectedAirport]);
+
+  async function fetchAirports() {
+    try {
+      setLoading(true);
+      // Using the backend API instead of direct Supabase call
+      const data = await api.airports.getAll();
+      setAirports(data);
+      
+      if (data.length > 0 && !selectedAirport) {
+        setSelectedAirport(data[0].id);
+      }
+    } catch (error: any) {
+      console.error('Error fetching airports:', error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function fetchStands(airportId: string) {
+    try {
+      setLoading(true);
+      // Using the backend API instead of direct Supabase call
+      const data = await api.stands.getAll(airportId);
+      setStands(data);
+    } catch (error: any) {
+      console.error('Error fetching stands:', error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function saveStand() {
+    try {
+      if (!newStand.name) {
+        setMessage({ text: 'Stand name is required', type: 'error' });
+        return;
+      }
+
+      const standData = {
+        ...newStand,
+        airport_id: selectedAirport,
+      };
+
+      // Using the backend API instead of direct Supabase call
+      await api.stands.create(standData);
+
+      setMessage({ text: 'Stand added successfully', type: 'success' });
+      fetchStands(selectedAirport);
+      setNewStand({
+        name: '',
+        airport_id: '',
+        status: 'active',
+      });
+      setIsAddingStand(false);
+    } catch (error: any) {
+      setMessage({ text: error.message, type: 'error' });
+    }
+  }
+
+  async function updateStand() {
+    if (!isEditingStand) return;
+    
+    try {
+      // Using the backend API instead of direct Supabase call
+      await api.stands.update(isEditingStand.id, {
+        name: newStand.name,
+        status: newStand.status,
+      });
+
+      setMessage({ text: 'Stand updated successfully', type: 'success' });
+      fetchStands(selectedAirport);
+      setNewStand({
+        name: '',
+        airport_id: '',
+        status: 'active',
+      });
+      setIsEditingStand(null);
+    } catch (error: any) {
+      setMessage({ text: error.message, type: 'error' });
+    }
+  }
+
+  function startEditing(stand: Stand) {
+    setIsEditingStand(stand);
+    setNewStand({
+      name: stand.name,
+      airport_id: stand.airport_id,
+      status: stand.status,
+    });
+  }
+
+  function cancelEdit() {
+    setIsEditingStand(null);
+    setNewStand({
+      name: '',
+      airport_id: '',
+      status: 'active',
+    });
+  }
+
+  function getStatusClass(status: string) {
+    switch (status) {
+      case 'active':
+        return 'bg-green-700';
+      case 'maintenance':
+        return 'bg-amber-600';
+      case 'inactive':
+        return 'bg-red-700';
+      default:
+        return 'bg-gray-600';
+    }
+  }
+
+  // Rest of the component UI
+  // ...
+} 
